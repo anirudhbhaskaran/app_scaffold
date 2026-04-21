@@ -1,0 +1,35 @@
+services:
+
+  # ─── Application ──────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/backend:/app
+    restart: unless-stopped
+    env_file: ./apps/backend/.env.example
+    environment:
+      MONGODB_URL: mongodb://admin:admin_secret@mongodb:27017/maindb?authSource=admin
+      REDIS_URL: redis://:admin_secret@redis:6379/0
+      KEYCLOAK_URL: http://keycloak:8080
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./apps/web/.env.example
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
